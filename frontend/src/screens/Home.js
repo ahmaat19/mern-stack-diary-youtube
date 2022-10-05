@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import moment from 'moment'
 import { FaEdit, FaTrash } from 'react-icons/fa'
@@ -6,13 +6,44 @@ import { Link } from 'react-router-dom'
 import { data } from '../utils/Data'
 
 const Home = () => {
+  const [q, setQ] = useState('')
   const handleDelete = (e) => {
     console.log(`Delete ${e}`)
   }
 
+  const filteredData = data?.filter((d) =>
+    d?.title?.toLowerCase()?.includes(q?.toLowerCase())
+  )
+
   return (
-    <div className='row'>
-      {data?.map((obj) => (
+    <div className='row gy-3'>
+      <div className='col-lg-12 mt-3'>
+        <h3 className='text-center font-monospace'>
+          Diaries List [{filteredData?.length}]
+        </h3>
+        <div className='row'>
+          <div className='col-lg-3 col-md-5 col-12 mx-auto'>
+            <div className='input-group mb-3'>
+              <input
+                onChange={(e) => setQ(e.target.value)}
+                value={q}
+                type='text'
+                className='form-control shadow-none'
+                placeholder='Search by title'
+                aria-describedby='search'
+              />
+              <button
+                className='btn btn-outline-primary'
+                type='button'
+                id='search'
+              >
+                Button
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {filteredData?.map((obj) => (
         <div key={obj?._id} className='col-lg-4 col-md-6 col-12'>
           <div className='card border-0 shadow-sm rounded-0'>
             <div className='card-body'>
