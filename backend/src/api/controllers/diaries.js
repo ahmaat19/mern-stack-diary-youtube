@@ -2,7 +2,9 @@ import Diary from '../models/Diary.js'
 
 export const getDiaries = async (req, res) => {
   try {
-    const objects = await Diary.find({ user: req.user.id }).lean()
+    const objects = await Diary.find({ user: req.user.id })
+      .lean()
+      .populate('user', ['name', 'email'])
     res.send(objects)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -12,7 +14,13 @@ export const getDiaries = async (req, res) => {
 export const createDiary = async (req, res) => {
   try {
     const { title, description, eventDate } = req.body
-    const object = await Diary.create({ title, description, eventDate })
+
+    const object = await Diary.create({
+      title,
+      description,
+      eventDate,
+      user: req?.user?._id,
+    })
 
     res.status(200).send(object)
   } catch (error) {
