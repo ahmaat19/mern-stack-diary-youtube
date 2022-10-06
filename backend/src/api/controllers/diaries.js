@@ -11,6 +11,20 @@ export const getDiaries = async (req, res) => {
   }
 }
 
+export const getDiary = async (req, res) => {
+  try {
+    const objects = await Diary.findOne({
+      user: req.user.id,
+      _id: req.params.id,
+    })
+      .lean()
+      .populate('user', ['name', 'email'])
+    res.send(objects)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
 export const createDiary = async (req, res) => {
   try {
     const { title, description, eventDate } = req.body

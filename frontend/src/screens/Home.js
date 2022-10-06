@@ -1,17 +1,64 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import moment from 'moment'
 import { FaEdit, FaTrash } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
-import { data } from '../utils/Data'
+import { Link, useNavigate } from 'react-router-dom'
+import { getFromLocalStorage } from '../utils/localStorage'
+import axios from 'axios'
+import Avatar from 'react-avatar'
 
 const Home = () => {
   const [q, setQ] = useState('')
-  const handleDelete = (e) => {
-    console.log(`Delete ${e}`)
+  const [event, setEvents] = useState([])
+  const [error, setError] = useState('')
+
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (!getFromLocalStorage('userInfo')) return navigate('/login')
+  }, [navigate])
+
+  const getDiaries = async () => {
+    try {
+      const { data } = await axios.get(`http://localhost:5000/api/diaries`, {
+        headers: {
+          Authorization: `Bearer ${getFromLocalStorage('userInfo')?.token}`,
+        },
+      })
+      return setEvents(data)
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
   }
 
-  const filteredData = data?.filter((d) =>
+  const deleteDiary = async (_id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/diaries/${_id}`, {
+        headers: {
+          Authorization: `Bearer ${getFromLocalStorage('userInfo')?.token}`,
+        },
+      })
+
+      return getDiaries()
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
+  }
+
+  const handleDelete = (e) => {
+    deleteDiary(e)
+  }
+
+  useEffect(() => {
+    getDiaries()
+  }, [])
+
+  const filteredData = event?.filter((d) =>
     d?.title?.toLowerCase()?.includes(q?.toLowerCase())
   )
 
@@ -42,6 +89,9 @@ const Home = () => {
             </div>
           </div>
         </div>
+        {error && (
+          <div className='alert alert-danger text-center mb-3'>{error}</div>
+        )}
       </div>
       {filteredData?.map((obj) => (
         <div key={obj?._id} className='col-lg-4 col-md-6 col-12'>
@@ -67,7 +117,13 @@ const Home = () => {
               <div className='card-text'>
                 <div className='d-flex justify-content-between align-items-center mb-3'>
                   <div>
-                    <span>{obj?.user?.image}</span>
+                    <Avatar
+                      name={obj?.user?.name}
+                      size='20'
+                      textSizeRatio={1.75}
+                      round='25px'
+                      className='mb-1'
+                    />
                     <small className='ms-2 f-italic'>{obj?.user?.name}</small>
                   </div>
                   <div>

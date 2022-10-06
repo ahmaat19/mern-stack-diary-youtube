@@ -5,6 +5,7 @@ import {
   updateDiary,
   deleteDiary,
   createDiary,
+  getDiary,
 } from '../controllers/diaries.js'
 
 const router = express.Router()
@@ -14,5 +15,6 @@ router
   .route('/api/diaries/:id')
   .put(isAuth, updateDiary)
   .delete(isAuth, deleteDiary)
+  .get(isAuth, getDiary)
 
 export default router

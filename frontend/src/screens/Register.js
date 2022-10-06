@@ -1,16 +1,54 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import axios from 'axios'
+import React, { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import FormContainer from '../components/FormContainer'
+import { getFromLocalStorage, setToLocalStorage } from '../utils/localStorage'
 
 const Register = () => {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+
+  const navigate = useNavigate()
+  useEffect(() => {
+    if (getFromLocalStorage('userInfo')) return navigate('/')
+  }, [navigate])
+
+  const userRegisterApi = async ({ name, email, password }) => {
+    try {
+      const { data } = await axios.post(
+        `http://localhost:5000/api/auth/register`,
+        {
+          name,
+          email,
+          password,
+        }
+      )
+      setToLocalStorage('userInfo', data)
+      return navigate('/')
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log({
+    if (!name || !email || !password) return null
+
+    if (password !== confirmPassword) {
+      setError('Your password and confirm password do not match')
+      setTimeout(() => {
+        setError('')
+      }, 5000)
+      return null
+    }
+
+    userRegisterApi({
       name,
       email,
       password,
@@ -22,6 +60,9 @@ const Register = () => {
     <FormContainer>
       <form onSubmit={(e) => handleSubmit(e)}>
         <div className='col-lg-5 col-md-8 col-12 mx-auto shadow-sm p-5'>
+          {error && (
+            <div className='alert alert-danger text-center mb-3'>{error}</div>
+          )}
           <h1 className='title text-center'>Registration Form</h1> <hr />
           <div className='mb-3'>
             <label htmlFor='name' className='form-label'>
@@ -33,6 +74,7 @@ const Register = () => {
               type='text'
               className='form-control'
               id='name'
+              required
             />
           </div>
           <div className='mb-3'>
@@ -46,6 +88,7 @@ const Register = () => {
               className='form-control'
               id='email'
               aria-describedby='emailHelp'
+              required
             />
           </div>
           <div className='mb-3'>
@@ -58,6 +101,7 @@ const Register = () => {
               type='password'
               className='form-control'
               id='password'
+              required
             />
           </div>
           <div className='mb-3'>
@@ -70,6 +114,7 @@ const Register = () => {
               type='password'
               className='form-control'
               id='confirmPassword'
+              required
             />
           </div>
           <div className='mb-3'>

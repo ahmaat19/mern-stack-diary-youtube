@@ -1,3 +1,4 @@
+import { generateToken } from '../../utils/auth.js'
 import User from '../models/User.js'
 
 export const register = async (req, res) => {
@@ -9,7 +10,12 @@ export const register = async (req, res) => {
     object.password = await object.encryptPassword(password)
     await object.save()
 
-    res.status(200).send(object)
+    res.status(200).send({
+      _id: object._id,
+      name: object.name,
+      email: object.email,
+      token: generateToken(object._id),
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

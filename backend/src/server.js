@@ -2,6 +2,7 @@ import path from 'path'
 import express from 'express'
 import 'dotenv/config'
 import morgan from 'morgan'
+import cors from 'cors'
 import { notFound } from './api/middlewares/error.js'
 import db from './config/db.js'
 import loginRoute from '../src/api/routers/login.js'
@@ -17,6 +18,12 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use(express.json())
+app.use(
+  cors({
+    origin: 'http://localhost:3000',
+    optionsSuccessStatus: 200,
+  })
+)
 
 app.use('/', loginRoute)
 app.use('/', registerRoute)

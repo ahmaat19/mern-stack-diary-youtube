@@ -1,12 +1,18 @@
+import axios from 'axios'
 import moment from 'moment'
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import FormContainer from '../components/FormContainer'
-import { data } from '../utils/Data'
+import { getFromLocalStorage } from '../utils/localStorage'
 
 const Form = () => {
   const param = useParams()
   const navigate = useNavigate()
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (!getFromLocalStorage('userInfo')) return navigate('/login')
+  }, [navigate])
 
   const [id, setId] = useState(null)
   const [title, setTitle] = useState('')
@@ -14,16 +20,74 @@ const Form = () => {
   const [eventDate, setEventDate] = useState('')
   const [formStatus, setFormStatus] = useState('create')
 
+  const createDiary = async ({ title, description, eventDate }) => {
+    try {
+      await axios.post(
+        `http://localhost:5000/api/diaries`,
+        { title, description, eventDate },
+        {
+          headers: {
+            Authorization: `Bearer ${getFromLocalStorage('userInfo')?.token}`,
+          },
+        }
+      )
+      return navigate('/')
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
+  }
+
+  const updateDiary = async ({ _id, title, description, eventDate }) => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/diaries/${_id}`,
+        { _id, title, description, eventDate },
+        {
+          headers: {
+            Authorization: `Bearer ${getFromLocalStorage('userInfo')?.token}`,
+          },
+        }
+      )
+      return navigate('/')
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
+  }
+
+  const getDiary = async ({ _id }) => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:5000/api/diaries/${_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${getFromLocalStorage('userInfo')?.token}`,
+          },
+        }
+      )
+      setTitle(data?.title)
+      setDescription(data?.description)
+      setEventDate(moment(data?.eventDate).format('YYYY-MM-DDTHH:MM'))
+      setId(data?._id)
+      setFormStatus('edit')
+
+      return data
+    } catch (error) {
+      setError(error?.response?.data?.error)
+      return setTimeout(() => {
+        setError('')
+      }, 5000)
+    }
+  }
+
   useEffect(() => {
     if (param?.id) {
-      const dataObj = data?.find((obj) => obj._id === param.id)
-      if (dataObj) {
-        setTitle(dataObj?.title)
-        setDescription(dataObj?.description)
-        setEventDate(moment(dataObj?.eventDate).format('YYYY-MM-DDTHH:MM'))
-        setFormStatus('edit')
-        setId(dataObj?._id)
-      }
+      getDiary({ _id: param.id })
     } else {
       setTitle('')
       setDescription('')
@@ -35,18 +99,20 @@ const Form = () => {
 
   const submitHandler = (e) => {
     e.preventDefault()
-    console.log({
-      formStatus,
-      _id: id,
-      title,
-      description,
-      eventDate,
-    })
+    if (formStatus === 'create')
+      return createDiary({ title, description, eventDate })
+
+    if (formStatus === 'edit')
+      return updateDiary({ _id: id, title, description, eventDate })
   }
+
   return (
     <FormContainer>
       <form onSubmit={(e) => submitHandler(e)}>
         <div className='col-md-8 col-12 mx-auto shadow-sm p-5'>
+          {error && (
+            <div className='alert alert-danger text-center mb-3'>{error}</div>
+          )}
           <h1 className='title text-center'>Diary Form</h1> <hr />
           <div className='mb-3'>
             <label htmlFor='title' className='form-label'>
@@ -58,6 +124,7 @@ const Form = () => {
               type='text'
               className='form-control'
               id='title'
+              required
             />
           </div>
           <div className='mb-3'>
@@ -72,6 +139,7 @@ const Form = () => {
               type='text'
               className='form-control'
               id='description'
+              required
             />
           </div>
           <div className='mb-3'>
@@ -84,6 +152,7 @@ const Form = () => {
               type='datetime-local'
               className='form-control'
               id='date'
+              required
             />
           </div>
           <Link
